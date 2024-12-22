@@ -12,6 +12,12 @@ This project aims to analyze the sentiment of financial news headlines (positive
 
 
 ---
+Data source
+use a publicly available dataset  such as:
+kaggle data set:Financial phrase bank
+yahoo  finance news scraper
+bloomberg api
+---
 
 📂 Project Structure
 
