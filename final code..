@@ -1,0 +1,100 @@
+# Financial News Sentiment Analysis
+
+## Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud
+import re
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+import warnings
+warnings.filterwarnings('ignore')
+
+## Load Dataset
+# Replace with your dataset path
+data = pd.read_csv('financial_news_dataset.csv')  
+
+# Display initial rows
+print(data.head())
+
+## Data Exploration
+# Dataset information
+print(data.info())
+
+# Check for missing values
+print(data.isnull().sum())
+
+# Sentiment distribution visualization
+sns.countplot(data['Sentiment'])
+plt.title("Sentiment Distribution")
+plt.show()
+
+# Word Cloud for Positive Sentiments
+positive_words = ' '.join(data[data['Sentiment'] == 'positive']['Headline'])
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(positive_words)
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.show()
+
+## Data Preprocessing
+# Function to clean text data
+def clean_text(text):
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    text = text.lower()  # Convert to lowercase
+    text = ' '.join([word for word in text.split() if word not in stopwords.words('english')])
+    return text
+
+# Apply text cleaning
+data['Cleaned_Headline'] = data['Headline'].apply(clean_text)
+
+# Encode Sentiment Labels
+data['Sentiment_Label'] = data['Sentiment'].map({'positive': 1, 'negative': 0, 'neutral': 2})
+
+## Feature and Target Variable Definition
+X = data['Cleaned_Headline']
+y = data['Sentiment_Label']
+
+## Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+## Text Vectorization using TF-IDF
+tfidf = TfidfVectorizer(max_features=5000)
+X_train_tfidf = tfidf.fit_transform(X_train)
+X_test_tfidf = tfidf.transform(X_test)
+
+## Model Training
+model = MultinomialNB()
+model.fit(X_train_tfidf, y_train)
+
+## Model Evaluation
+# Predictions
+y_pred = model.predict(X_test_tfidf)
+
+# Accuracy
+print("Accuracy Score:", accuracy_score(y_test, y_pred))
+
+# Classification Report
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Negative', 'Positive', 'Neutral'], 
+            yticklabels=['Negative', 'Positive', 'Neutral'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+
+## Prediction on New Data
+new_data = ["The stock market is crashing due to inflation fears."]
+new_data_tfidf = tfidf.transform(new_data)
+prediction = model.predict(new_data_tfidf)
+print("Sentiment Prediction:", prediction)
